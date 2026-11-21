@@ -206,13 +206,20 @@
       String(d.getMonth()+1).padStart(2,"0") + "-" +
       String(d.getDate()).padStart(2,"0");
   }
+  /* UTC-based formatter: d=1795291200000 always shows as 2026-11-22 */
+  function msToInputDateUTC(ms) {
+    var d = new Date(ms);
+    return d.getUTCFullYear() + "-" +
+      String(d.getUTCMonth()+1).padStart(2,"0") + "-" +
+      String(d.getUTCDate()).padStart(2,"0");
+  }
 
   function certificateHtml(sn, poi, dMs) {
     var bgAbs = new URL("bgcopy.png", window.location.href).href;
     var qrAbs = new URL("qrcode.png", window.location.href).href;
 
     /* indent for the exporter address block (#p1) — tweak here */
-    var EXP_ADDR_INDENT = "40px";
+    var EXP_ADDR_INDENT = "3px";
 
     var col0 = "", col1 = "", col2 = "", col3 = "", col4 = "", col5 = "";
     CERT.Products.forEach(function (p, i) {
@@ -347,11 +354,12 @@
     }
   }
 
+  /* URL contract: ?d= is UTC midnight ms for the chosen day */
   function currentDateMs() {
-    var v = document.getElementById("date").value;
+    var v = document.getElementById("date").value;   // yyyy-mm-dd
     if (!v) return Date.now();
     var p = v.split("-");
-    return new Date(+p[0], +p[1]-1, +p[2]).getTime();
+    return Date.UTC(+p[0], +p[1]-1, +p[2]);
   }
 
   function readUrlParams() {
@@ -361,7 +369,8 @@
     var dMs = q.get("d") ? parseInt(q.get("d"),10) : Date.now();
     document.getElementById("sn").value = sn;
     document.getElementById("poi").value = poi;
-    document.getElementById("date").value = toInputDate(new Date(dMs));
+    // UTC formatter → d=1795291200000 always renders as 2026-11-22
+    document.getElementById("date").value = msToInputDateUTC(dMs);
     return { sn: sn, poi: poi, dMs: dMs };
   }
 
@@ -392,6 +401,7 @@
   });
 
   (function () {
+    // Default date = today (local); URL wins if ?d= is present.
     document.getElementById("date").value = toInputDate(new Date());
     var p = readUrlParams();
     if (p.sn) doSearch(p.sn, p.poi, p.dMs, false);
